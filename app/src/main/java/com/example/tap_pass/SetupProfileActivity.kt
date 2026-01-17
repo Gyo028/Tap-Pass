@@ -13,28 +13,18 @@ class SetupProfileActivity : AppCompatActivity() {
         setContentView(R.layout.activity_setup_profile)
 
         val fullNameEditText: EditText = findViewById(R.id.setup_full_name)
-        val usernameEditText: EditText = findViewById(R.id.setup_username)
         val rfidEditText: EditText = findViewById(R.id.setup_rfid)
         val phoneEditText: EditText = findViewById(R.id.setup_phone_number)
         val continueButton: Button = findViewById(R.id.continue_button)
 
-        // Retrieve the username from the registration screen to pre-fill the field
-        val registeredUsername = intent.getStringExtra("username")
-        usernameEditText.setText(registeredUsername)
-
         continueButton.setOnClickListener {
             val fullName = fullNameEditText.text.toString()
-            val username = usernameEditText.text.toString()
             val rfid = rfidEditText.text.toString()
             val phone = phoneEditText.text.toString()
 
             // Basic validation
             if (fullName.isBlank()) {
                 fullNameEditText.error = "Full name is required"
-                return@setOnClickListener
-            }
-            if (username.isBlank()) {
-                usernameEditText.error = "Username is required"
                 return@setOnClickListener
             }
             if (rfid.isBlank()) {
@@ -51,7 +41,6 @@ class SetupProfileActivity : AppCompatActivity() {
             // Navigate to the home screen
             val intent = Intent(this, MainActivity::class.java)
             intent.putExtra("fullName", fullName)
-            intent.putExtra("username", username)
             intent.putExtra("rfid", rfid)
             intent.putExtra("phone", phone)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

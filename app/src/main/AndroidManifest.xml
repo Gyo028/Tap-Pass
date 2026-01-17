@@ -44,6 +44,15 @@
         <activity
             android:name=".UpcomingRequestsActivity"
             android:exported="false" />
+        <activity
+            android:name=".SendActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ConfirmSendActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReceiveQrActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

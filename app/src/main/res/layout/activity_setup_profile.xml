@@ -62,17 +62,6 @@
                     android:padding="16dp"/>
 
                 <EditText
-                    android:id="@+id/setup_username"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Username"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#AAAAAA"
-                    android:background="@drawable/input_bg"
-                    android:padding="16dp"
-                    android:layout_marginTop="12dp"/>
-
-                <EditText
                     android:id="@+id/setup_rfid"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
