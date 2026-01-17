@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/purps_bg">
+
+    <TextView
+        android:id="@+id/spendingTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Spending Summary"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:padding="16dp"
+        android:layout_alignParentTop="true"/>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_below="@id/spendingTitle"
+        app:cardBackgroundColor="#2A2A2A"
+        app:cardCornerRadius="12dp"
+        android:layout_margin="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chart or summary will go here."
+            android:textColor="#CCCCCC"
+            android:layout_gravity="center"/>
+
+    </androidx.cardview.widget.CardView>
+
+</RelativeLayout>

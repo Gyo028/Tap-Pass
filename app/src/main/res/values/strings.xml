@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Tap-Pass</string>
+    <string name="sign_in_text">Already have an Account? Sign in</string>
+    <string name="log_in_text">Don\'t have an account? Sign up</string>
+</resources>

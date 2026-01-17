@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/purps_bg"
+    android:padding="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reset Your PIN"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="32dp"/>
+
+    <!-- Form Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/resetPinCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#1E1E1E"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <EditText
+                android:id="@+id/currentPin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Current 6-Digit PIN"
+                android:inputType="numberPassword"
+                android:maxLength="6"
+                android:background="@drawable/input_bg"
+                android:drawableStart="@drawable/lock"
+                android:drawablePadding="12dp"
+                android:padding="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:textSize="14sp"/>
+
+            <EditText
+                android:id="@+id/newPin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="New 6-Digit PIN"
+                android:inputType="numberPassword"
+                android:maxLength="6"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/input_bg"
+                android:drawableStart="@drawable/lock"
+                android:drawablePadding="12dp"
+                android:padding="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:textSize="14sp"/>
+
+            <EditText
+                android:id="@+id/confirmNewPin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Confirm New 6-Digit PIN"
+                android:inputType="numberPassword"
+                android:maxLength="6"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/input_bg"
+                android:drawableStart="@drawable/lock"
+                android:drawablePadding="12dp"
+                android:padding="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#B0B0B0"
+                android:textSize="14sp"/>
+
+            <Button
+                android:id="@+id/confirm_reset_button"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="24dp"
+                android:text="Confirm Reset"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                style="@style/DarkButton"
+                android:backgroundTint="#5C1B97"/>
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

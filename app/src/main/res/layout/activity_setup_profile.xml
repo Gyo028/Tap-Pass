@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/purps_bg"
+    android:padding="24dp">
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1E1E1E"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="10dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Set Up Your Profile"
+                    android:textColor="#FFFFFF"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="24dp"/>
+
+                <ImageView
+                    android:id="@+id/setup_profile_image"
+                    android:layout_width="110dp"
+                    android:layout_height="110dp"
+                    android:src="@drawable/head"
+                    android:background="@drawable/circle_bg"
+                    android:padding="6dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="24dp"/>
+
+                <EditText
+                    android:id="@+id/setup_full_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Full Name"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AAAAAA"
+                    android:background="@drawable/input_bg"
+                    android:padding="16dp"/>
+
+                <EditText
+                    android:id="@+id/setup_username"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Username"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AAAAAA"
+                    android:background="@drawable/input_bg"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp"/>
+
+                <EditText
+                    android:id="@+id/setup_rfid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="RFID#"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AAAAAA"
+                    android:background="@drawable/input_bg"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp"/>
+
+                <EditText
+                    android:id="@+id/setup_phone_number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Phone Number"
+                    android:inputType="phone"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#AAAAAA"
+                    android:background="@drawable/input_bg"
+                    android:padding="16dp"
+                    android:layout_marginTop="12dp"/>
+
+                <Button
+                    android:id="@+id/continue_button"
+                    style="@style/DarkButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:text="Continue"
+                    android:layout_marginTop="24dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

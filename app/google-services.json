@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "906852750407",
+    "firebase_url": "https://test-17a9d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "test-17a9d",
+    "storage_bucket": "test-17a9d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906852750407:android:2b137cab8ad4df0f4e0d62",
+        "android_client_info": {
+          "package_name": "com.example.midterms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl1GdKeJ7e7LFtMOmk-cUuTap8wT8wD_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906852750407:android:7f68e6c7531f6eca4e0d62",
+        "android_client_info": {
+          "package_name": "com.example.myspecial.firebasekotlin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl1GdKeJ7e7LFtMOmk-cUuTap8wT8wD_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906852750407:android:a12ae66f5d0726944e0d62",
+        "android_client_info": {
+          "package_name": "com.example.tap_pass"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDl1GdKeJ7e7LFtMOmk-cUuTap8wT8wD_4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
