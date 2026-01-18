@@ -7,12 +7,19 @@ import android.widget.ImageView
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 class ProfileActivity : AppCompatActivity() {
+    private lateinit var auth: FirebaseAuth
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
+
+        auth = Firebase.auth
 
         val fullNameTextView: TextView = findViewById(R.id.profile_full_name)
         val userIdTextView: TextView = findViewById(R.id.profile_user_id)
@@ -42,9 +49,13 @@ class ProfileActivity : AppCompatActivity() {
         backButton.setOnClickListener { finish() }
 
         logoutButton.setOnClickListener {
+            auth.signOut()
+
             val intent = Intent(this, LoginActivity::class.java)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
+
+            finish()
         }
 
         resetPinButton.setOnClickListener {
