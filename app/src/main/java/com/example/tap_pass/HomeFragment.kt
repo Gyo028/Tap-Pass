@@ -1,6 +1,5 @@
 package com.example.tap_pass
 
-import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -8,39 +7,39 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.NumberFormat
-import java.util.Locale
-import java.util.Timer
-import java.util.TimerTask
+import java.util.*
 
 class HomeFragment : Fragment() {
 
     private lateinit var balanceText: TextView
-    private var currentBalance = 100.0 // Initial balance
+    private lateinit var welcomeText: TextView
+    private lateinit var userIdText: TextView
     private lateinit var viewPager: ViewPager2
     private lateinit var carouselAdapter: CarouselAdapter
     private lateinit var dotsIndicator: LinearLayout
+    private lateinit var fstore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
     private val handler = Handler(Looper.getMainLooper())
     private var timer: Timer? = null
     private val images = listOf(R.drawable.ads1, R.drawable.ads2)
 
-    // This launcher is now deprecated since the loading is manual review
-    private val loadAmountLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        // We don't automatically update balance anymore, but the launcher is kept for now.
-    }
+    // Buttons
+    private lateinit var loadBtn: Button
+    private lateinit var sendBtn: Button
+    private lateinit var receiveBtn: Button
+    private lateinit var profileButton: ImageButton
+    private lateinit var copyRfidButton: ImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -49,57 +48,90 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-        val welcomeText: TextView = view.findViewById(R.id.welcomeText)
-        val userIdText: TextView = view.findViewById(R.id.userIdText)
+        // Initialize views
         balanceText = view.findViewById(R.id.balanceText)
-        val loadBtn: Button = view.findViewById(R.id.loadBtn)
-        val sendBtn: Button = view.findViewById(R.id.sendBtn)
-        val receiveBtn: Button = view.findViewById(R.id.receiveBtn)
-        val profileButton: ImageButton = view.findViewById(R.id.profileButton)
-        val copyRfidButton: ImageButton = view.findViewById(R.id.copyRfidButton)
+        welcomeText = view.findViewById(R.id.welcomeText)
+        userIdText = view.findViewById(R.id.userIdText)
         viewPager = view.findViewById(R.id.carouselViewPager)
         dotsIndicator = view.findViewById(R.id.dotsIndicator)
 
-        val activity = requireActivity()
-        val rfid = activity.intent.getStringExtra("rfid")
-        val fullName = activity.intent.getStringExtra("fullName")
-        val phone = activity.intent.getStringExtra("phone")
+        loadBtn = view.findViewById(R.id.loadBtn)
+        sendBtn = view.findViewById(R.id.sendBtn)
+        receiveBtn = view.findViewById(R.id.receiveBtn)
+        profileButton = view.findViewById(R.id.profileButton)
+        copyRfidButton = view.findViewById(R.id.copyRfidButton)
 
-        welcomeText.text = "Welcome, $fullName!"
-        userIdText.text = "rfid# $rfid"
-        updateBalanceText()
+        // Initialize Firebase
+        auth = FirebaseAuth.getInstance()
+        fstore = FirebaseFirestore.getInstance()
 
-        copyRfidButton.setOnClickListener {
-            val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("RFID", rfid)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(activity, "RFID copied to clipboard", Toast.LENGTH_SHORT).show()
+        // Load user data from Firestore
+        val currentUserId = auth.currentUser?.uid
+        if (currentUserId != null) {
+            fstore.collection("users").document(currentUserId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        val fullName = document.getString("fullName") ?: ""
+                        val balance = document.getDouble("balance") ?: 0.0
+                        val rfid = document.getString("rfidUid") ?: ""
+                        val phone = document.getString("phone") ?: ""
+
+                        // Welcome text (first name only)
+                        val firstName = fullName.split(" ").firstOrNull() ?: fullName
+                        welcomeText.text = "Welcome, $firstName!"
+
+                        //Balance
+                        val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
+                        balanceText.text = format.format(balance)
+
+                        //RFID
+                        userIdText.text = "RFID#: $rfid"
+
+                        // Set up button listeners now that we have the data
+                        copyRfidButton.setOnClickListener {
+                            val clipboard = requireActivity().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("RFID", rfid)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(requireContext(), "RFID copied to clipboard", Toast.LENGTH_SHORT).show()
+                        }
+
+                        loadBtn.setOnClickListener {
+                            val intent = Intent(requireActivity(), LoadNewActivity::class.java)
+                            startActivity(intent)
+                        }
+
+                        sendBtn.setOnClickListener {
+                            val intent = Intent(requireActivity(), SendActivity::class.java)
+                            startActivity(intent)
+                        }
+
+                        receiveBtn.setOnClickListener {
+                            val intent = Intent(requireActivity(), ReceiveQrActivity::class.java)
+                            intent.putExtra("rfid", rfid)
+                            startActivity(intent)
+                        }
+
+                        profileButton.setOnClickListener {
+                            val intent = Intent(requireActivity(), ProfileActivity::class.java)
+                            intent.putExtra("fullName", fullName)
+                            intent.putExtra("rfid", rfid)
+                            intent.putExtra("phone", phone)
+                            startActivity(intent)
+                        }
+
+                    } else {
+                        Log.d("HomeFragment", "No user document found")
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e("HomeFragment", "Error fetching user data", e)
+                }
+        } else {
+            Log.d("HomeFragment", "No current user")
         }
 
-        loadBtn.setOnClickListener {
-            val intent = Intent(activity, LoadNewActivity::class.java)
-            loadAmountLauncher.launch(intent)
-        }
-
-        sendBtn.setOnClickListener {
-            val intent = Intent(activity, SendActivity::class.java)
-            startActivity(intent)
-        }
-
-        receiveBtn.setOnClickListener {
-            val intent = Intent(activity, ReceiveQrActivity::class.java)
-            intent.putExtra("rfid", rfid)
-            startActivity(intent)
-        }
-
-        profileButton.setOnClickListener {
-            val intent = Intent(activity, ProfileActivity::class.java)
-            intent.putExtra("fullName", fullName)
-            intent.putExtra("rfid", rfid)
-            intent.putExtra("phone", phone)
-            startActivity(intent)
-        }
-
+        // Setup carousel regardless of Firestore data
         setupCarousel()
         setupDots()
 
@@ -133,6 +165,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupDots() {
+        dotsIndicator.removeAllViews() // clear any old dots
         for (i in images.indices) {
             val dot = ImageView(requireContext())
             dot.setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.dot_inactive))
@@ -148,11 +181,6 @@ class HomeFragment : Fragment() {
             val drawable = if (i == currentPosition) R.drawable.dot_active else R.drawable.dot_inactive
             dot.setImageDrawable(ContextCompat.getDrawable(requireContext(), drawable))
         }
-    }
-
-    private fun updateBalanceText() {
-        val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
-        balanceText.text = format.format(currentBalance)
     }
 
     override fun onDestroyView() {

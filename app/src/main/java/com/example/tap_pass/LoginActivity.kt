@@ -33,6 +33,8 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText = findViewById(R.id.login_password)
         loginButton = findViewById(R.id.login_button)
         progressBar = findViewById(R.id.progressbar)
+
+
         progressBar.visibility = View.GONE
 
         val registerTextView: TextView = findViewById(R.id.registerText)
