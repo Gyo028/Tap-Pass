@@ -11,6 +11,7 @@ import android.text.style.ClickableSpan
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
+    private lateinit var progressBar: ProgressBar
     private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +32,9 @@ class LoginActivity : AppCompatActivity() {
         emailEditText = findViewById(R.id.login_email)
         passwordEditText = findViewById(R.id.login_password)
         loginButton = findViewById(R.id.login_button)
+        progressBar = findViewById(R.id.progressbar)
+        progressBar.visibility = View.GONE
+
         val registerTextView: TextView = findViewById(R.id.registerText)
 
         auth = FirebaseAuth.getInstance()
@@ -47,8 +52,14 @@ class LoginActivity : AppCompatActivity() {
 
         if (!validateForm(email, password)) return
 
+        // Show loading
+        progressBar.visibility = View.VISIBLE
+
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
+                // Hide loading
+                progressBar.visibility = View.GONE
+
                 if (task.isSuccessful) {
                     Toast.makeText(this, "Login successful", Toast.LENGTH_LONG).show()
                     startActivity(Intent(this, MainActivity::class.java))
@@ -59,10 +70,10 @@ class LoginActivity : AppCompatActivity() {
                         "Invalid email or password",
                         Toast.LENGTH_LONG
                     ).show()
-
                 }
             }
     }
+
 
     private fun validateForm(email: String, password: String): Boolean {
         emailEditText.error = null
