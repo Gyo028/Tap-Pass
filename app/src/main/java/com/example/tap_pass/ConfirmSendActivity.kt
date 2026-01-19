@@ -6,9 +6,16 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.FirebaseFirestore
 import java.text.NumberFormat
+import java.util.Locale
 
 class ConfirmSendActivity : AppCompatActivity() {
+
+    private lateinit var fstore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,26 +27,119 @@ class ConfirmSendActivity : AppCompatActivity() {
         val recipientName: TextView = findViewById(R.id.recipientName)
         val recipientRfid: TextView = findViewById(R.id.recipientRfid)
 
-        val amount = intent.getStringExtra("amount")
-        val rfid = intent.getStringExtra("rfid")
-        val name = intent.getStringExtra("recipientName")
+        auth = FirebaseAuth.getInstance()
+        fstore = FirebaseFirestore.getInstance()
 
-        val format = NumberFormat.getCurrencyInstance()
-        format.maximumFractionDigits = 2
-        format.currency = java.util.Currency.getInstance("PHP")
-        amountValue.text = format.format(amount?.toDoubleOrNull() ?: 0.0)
+        val amountStr = intent.getStringExtra("amount")
+        val amount = amountStr?.toDoubleOrNull()
 
+        if (amount == null || amount <= 0) {
+            Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show()
+            finish() // Close activity if amount is invalid
+            return
+        }
+
+        // 3️⃣ Now safely set the formatted value
+        val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
+        amountValue.text = format.format(amount)
+
+        // 4️⃣ Set recipient details
+        val rfid = intent.getStringExtra("rfid") ?: ""
+        val name = intent.getStringExtra("recipientName") ?: ""
         recipientName.text = name
         recipientRfid.text = "RFID: $rfid"
 
-        backButton.setOnClickListener {
-            finish()
-        }
+        backButton.setOnClickListener { finish() }
 
         confirmButton.setOnClickListener {
-            Toast.makeText(this, "Send Confirmed (Placeholder)", Toast.LENGTH_SHORT).show()
-            // Here you would add the logic to actually send the load
+            if (amount <= 0) {
+                Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            sendMoney(amount, rfid)
+        }
+    }
+
+    private fun sendMoney(amount: Double, recipientRfid: String) {
+        val senderUid = auth.currentUser?.uid ?: return
+
+        // 1️⃣ Find recipient by RFID
+        fstore.collection("users")
+            .whereEqualTo("rfidUid", recipientRfid)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { query ->
+                if (query.isEmpty) {
+                    Toast.makeText(this, "Recipient not found", Toast.LENGTH_SHORT).show()
+                    return@addOnSuccessListener
+                }
+
+                val recipientDoc = query.documents[0]
+                val recipientUid = recipientDoc.id
+
+                processTransaction(senderUid, recipientUid, amount, recipientRfid)
+            }
+            .addOnFailureListener {
+                Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+            }
+    }
+
+    private fun processTransaction(
+        senderUid: String,
+        recipientUid: String,
+        amount: Double,
+        recipientRfid: String
+    ) {
+        val senderRef = fstore.collection("users").document(senderUid)
+        val recipientRef = fstore.collection("users").document(recipientUid)
+
+        fstore.runTransaction { transaction ->
+            val senderSnap = transaction.get(senderRef)
+            val recipientSnap = transaction.get(recipientRef)
+
+            val senderBalance = senderSnap.getDouble("balance") ?: 0.0
+            val recipientBalance = recipientSnap.getDouble("balance") ?: 0.0
+
+            //Insufficient balance
+            if (amount > senderBalance) {
+                throw Exception("Insufficient balance")
+            }
+
+            // Update balances
+            transaction.update(senderRef, "balance", senderBalance - amount)
+            transaction.update(recipientRef, "balance", recipientBalance + amount)
+
+            //Sender transaction record
+            val senderTx = hashMapOf(
+                "type" to "SEND",
+                "amount" to amount,
+                "otherUserRfid" to recipientRfid,
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+
+            //Recipient transaction record
+            val recipientTx = hashMapOf(
+                "type" to "RECEIVE",
+                "amount" to amount,
+                "otherUserRfid" to senderSnap.getString("rfidUid"),
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+
+            transaction.set(
+                senderRef.collection("transactions").document(),
+                senderTx
+            )
+            transaction.set(
+                recipientRef.collection("transactions").document(),
+                recipientTx
+            )
+
+            null
+        }.addOnSuccessListener {
+            Toast.makeText(this, "Transfer successful", Toast.LENGTH_SHORT).show()
             finish()
+        }.addOnFailureListener {
+            Toast.makeText(this, it.message ?: "Transaction failed", Toast.LENGTH_LONG).show()
         }
     }
 }
