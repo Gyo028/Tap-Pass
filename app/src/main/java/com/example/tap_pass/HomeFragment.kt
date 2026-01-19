@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.widget.ViewPager2
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -28,6 +30,8 @@ class HomeFragment : Fragment() {
     private lateinit var viewPager: ViewPager2
     private lateinit var carouselAdapter: CarouselAdapter
     private lateinit var dotsIndicator: LinearLayout
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout // Added
+
     private lateinit var fstore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private val handler = Handler(Looper.getMainLooper())
@@ -54,6 +58,7 @@ class HomeFragment : Fragment() {
         userIdText = view.findViewById(R.id.userIdText)
         viewPager = view.findViewById(R.id.carouselViewPager)
         dotsIndicator = view.findViewById(R.id.dotsIndicator)
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout) // Added
 
         loadBtn = view.findViewById(R.id.loadBtn)
         sendBtn = view.findViewById(R.id.sendBtn)
@@ -65,7 +70,25 @@ class HomeFragment : Fragment() {
         auth = FirebaseAuth.getInstance()
         fstore = FirebaseFirestore.getInstance()
 
-        // Load user data from Firestore
+        // Setup SwipeRefreshLayout colors
+        swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(requireContext(), R.color.purple_500))
+
+        // Set Refresh Listener
+        swipeRefreshLayout.setOnRefreshListener {
+            fetchUserData()
+        }
+
+        // Initial data load
+        fetchUserData()
+
+        // Setup carousel
+        setupCarousel()
+        setupDots()
+
+        return view
+    }
+
+    private fun fetchUserData() {
         val currentUserId = auth.currentUser?.uid
         if (currentUserId != null) {
             fstore.collection("users").document(currentUserId)
@@ -81,14 +104,14 @@ class HomeFragment : Fragment() {
                         val firstName = fullName.split(" ").firstOrNull() ?: fullName
                         welcomeText.text = "Welcome, $firstName!"
 
-                        //Balance
+                        // Balance formatting
                         val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
                         balanceText.text = format.format(balance)
 
-                        //RFID
+                        // RFID
                         userIdText.text = "RFID#: $rfid"
 
-                        // Set up button listeners now that we have the data
+                        // Set up button listeners
                         copyRfidButton.setOnClickListener {
                             val clipboard = requireActivity().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("RFID", rfid)
@@ -97,13 +120,11 @@ class HomeFragment : Fragment() {
                         }
 
                         loadBtn.setOnClickListener {
-                            val intent = Intent(requireActivity(), LoadNewActivity::class.java)
-                            startActivity(intent)
+                            startActivity(Intent(requireActivity(), LoadNewActivity::class.java))
                         }
 
                         sendBtn.setOnClickListener {
-                            val intent = Intent(requireActivity(), SendActivity::class.java)
-                            startActivity(intent)
+                            startActivity(Intent(requireActivity(), SendActivity::class.java))
                         }
 
                         receiveBtn.setOnClickListener {
@@ -123,26 +144,24 @@ class HomeFragment : Fragment() {
                     } else {
                         Log.d("HomeFragment", "No user document found")
                     }
+                    // Stop refreshing animation
+                    swipeRefreshLayout.isRefreshing = false
                 }
                 .addOnFailureListener { e ->
                     Log.e("HomeFragment", "Error fetching user data", e)
+                    // Stop refreshing animation even on failure
+                    swipeRefreshLayout.isRefreshing = false
+                    Toast.makeText(requireContext(), "Failed to refresh data", Toast.LENGTH_SHORT).show()
                 }
         } else {
-            Log.d("HomeFragment", "No current user")
+            swipeRefreshLayout.isRefreshing = false
         }
-
-        // Setup carousel regardless of Firestore data
-        setupCarousel()
-        setupDots()
-
-        return view
     }
 
     private fun setupCarousel() {
         carouselAdapter = CarouselAdapter(images)
         viewPager.adapter = carouselAdapter
 
-        // Start at a large number to simulate infinite scrolling
         val startPosition = Int.MAX_VALUE / 2
         viewPager.setCurrentItem(startPosition, false)
 
@@ -151,9 +170,14 @@ class HomeFragment : Fragment() {
                 super.onPageSelected(position)
                 updateDots(position % images.size)
             }
+
+            override fun onPageScrollStateChanged(state: Int) {
+                super.onPageScrollStateChanged(state)
+                // Disable SwipeRefresh while the user is actively dragging the carousel horizontally
+                swipeRefreshLayout.isEnabled = (state == ViewPager2.SCROLL_STATE_IDLE)
+            }
         })
 
-        // Auto-slide functionality
         timer = Timer()
         timer?.schedule(object : TimerTask() {
             override fun run() {
@@ -165,7 +189,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupDots() {
-        dotsIndicator.removeAllViews() // clear any old dots
+        dotsIndicator.removeAllViews()
         for (i in images.indices) {
             val dot = ImageView(requireContext())
             dot.setImageDrawable(ContextCompat.getDrawable(requireContext(), R.drawable.dot_inactive))

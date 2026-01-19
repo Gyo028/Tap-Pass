@@ -55,7 +55,9 @@ class LoginActivity : AppCompatActivity() {
         if (!validateForm(email, password)) return
 
         // Show loading
+        loginButton.visibility = View.GONE
         progressBar.visibility = View.VISIBLE
+
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->

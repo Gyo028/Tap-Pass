@@ -1,5 +1,6 @@
 package com.example.tap_pass
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -39,11 +40,11 @@ class ConfirmSendActivity : AppCompatActivity() {
             return
         }
 
-        // 3️⃣ Now safely set the formatted value
+        // Now safely set the formatted value
         val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
         amountValue.text = format.format(amount)
 
-        // 4️⃣ Set recipient details
+        // Set recipient details
         val rfid = intent.getStringExtra("rfid") ?: ""
         val name = intent.getStringExtra("recipientName") ?: ""
         recipientName.text = name
@@ -57,13 +58,15 @@ class ConfirmSendActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             sendMoney(amount, rfid)
+            finish()
+            startActivity(Intent(this, MainActivity::class.java))
         }
     }
 
     private fun sendMoney(amount: Double, recipientRfid: String) {
         val senderUid = auth.currentUser?.uid ?: return
 
-        // 1️⃣ Find recipient by RFID
+        // Find recipient by RFID
         fstore.collection("users")
             .whereEqualTo("rfidUid", recipientRfid)
             .limit(1)

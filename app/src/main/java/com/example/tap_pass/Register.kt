@@ -64,6 +64,7 @@ class Register : AppCompatActivity() {
 
             if (validateForm()) {
                 // Show loading and disable button
+                createButton.visibility = View.GONE
                 progressBar.visibility = View.VISIBLE
                 createButton.isEnabled = false
 
