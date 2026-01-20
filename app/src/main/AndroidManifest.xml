@@ -53,6 +53,9 @@
         <activity
             android:name=".ReceiveQrActivity"
             android:exported="false" />
+        <activity
+            android:name=".TransactionsActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

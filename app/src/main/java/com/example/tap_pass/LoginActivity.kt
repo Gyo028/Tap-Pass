@@ -69,6 +69,7 @@ class LoginActivity : AppCompatActivity() {
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 } else {
+                    loginButton.visibility = View.VISIBLE
                     Toast.makeText(
                         this,
                         "Invalid email or password",

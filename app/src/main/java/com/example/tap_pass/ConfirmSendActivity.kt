@@ -103,6 +103,10 @@ class ConfirmSendActivity : AppCompatActivity() {
             val senderBalance = senderSnap.getDouble("balance") ?: 0.0
             val recipientBalance = recipientSnap.getDouble("balance") ?: 0.0
 
+            val senderName = senderSnap.getString("fullName") ?: "Unknown User"
+            val recipientName = recipientSnap.getString("fullName") ?: "Unknown User"
+            val senderRfid = senderSnap.getString("rfidUid") ?: ""
+
             //Insufficient balance
             if (amount > senderBalance) {
                 throw Exception("Insufficient balance")
@@ -117,6 +121,7 @@ class ConfirmSendActivity : AppCompatActivity() {
                 "type" to "SEND",
                 "amount" to amount,
                 "otherUserRfid" to recipientRfid,
+                "otherUserName" to recipientName, // Added this
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
@@ -124,7 +129,8 @@ class ConfirmSendActivity : AppCompatActivity() {
             val recipientTx = hashMapOf(
                 "type" to "RECEIVE",
                 "amount" to amount,
-                "otherUserRfid" to senderSnap.getString("rfidUid"),
+                "otherUserRfid" to senderRfid,
+                "otherUserName" to senderName, // Added this
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
