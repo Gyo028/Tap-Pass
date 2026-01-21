@@ -34,7 +34,6 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.login_button)
         progressBar = findViewById(R.id.progressbar)
 
-
         progressBar.visibility = View.GONE
 
         val registerTextView: TextView = findViewById(R.id.registerText)
@@ -54,10 +53,17 @@ class LoginActivity : AppCompatActivity() {
 
         if (!validateForm(email, password)) return
 
+        // Hardcoded admin check
+        if (email == "admin" && password == "admin1") {
+            Toast.makeText(this, "Admin login successful", Toast.LENGTH_LONG).show()
+            startActivity(Intent(this, AdminRequestsActivity::class.java))
+            finish()
+            return // Skip Firebase authentication for admin
+        }
+
         // Show loading
         loginButton.visibility = View.GONE
         progressBar.visibility = View.VISIBLE
-
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
@@ -78,7 +84,6 @@ class LoginActivity : AppCompatActivity() {
                 }
             }
     }
-
 
     private fun validateForm(email: String, password: String): Boolean {
         emailEditText.error = null

@@ -29,6 +29,7 @@
         <activity
             android:name=".ProfileActivity"
             android:exported="false" />
+        <activity
             android:name=".ResetPinActivity"
             android:exported="false" />
         <activity
@@ -51,6 +52,9 @@
             android:exported="false" />
         <activity
             android:name=".TransactionsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminRequestsActivity"
             android:exported="false" />
     </application>
 
