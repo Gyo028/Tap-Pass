@@ -29,17 +29,13 @@
         <activity
             android:name=".ProfileActivity"
             android:exported="false" />
-        <activity
-            android:name=".LoadActivity"
-            android:exported="false" />
-        <activity
             android:name=".ResetPinActivity"
             android:exported="false" />
         <activity
             android:name=".SetupProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".LoadNewActivity"
+            android:name=".LoadActivity"
             android:exported="false" />
         <activity
             android:name=".UpcomingRequestsActivity"

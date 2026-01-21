@@ -32,7 +32,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Main Content Card -->
     <androidx.cardview.widget.CardView
         android:id="@+id/paymentFormCard"
         android:layout_width="0dp"
@@ -50,7 +49,6 @@
             android:layout_height="wrap_content"
             android:padding="24dp">
 
-            <!-- Total Amount Display -->
             <TextView
                 android:id="@+id/totalAmountLabel"
                 android:layout_width="wrap_content"
@@ -73,59 +71,22 @@
                 app:layout_constraintStart_toStartOf="parent"
                 android:layout_marginTop="8dp"/>
 
-            <!-- Load Selection Buttons -->
             <GridLayout
                 android:id="@+id/loadSelectionButtons"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:columnCount="2"
-                android:rowCount="2"
                 android:layout_marginTop="24dp"
                 app:layout_constraintTop_toBottomOf="@id/totalAmountValue"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
-                <Button
-                    android:id="@+id/button50"
-                    style="@style/DarkButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginEnd="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="₱50" />
-
-                <Button
-                    android:id="@+id/button100"
-                    style="@style/DarkButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:text="₱100" />
-
-                <Button
-                    android:id="@+id/button150"
-                    style="@style/DarkButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginEnd="8dp"
-                    android:text="₱150" />
-
-                <Button
-                    android:id="@+id/button200"
-                    style="@style/DarkButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginStart="8dp"
-                    android:text="₱200" />
-
+                <Button android:id="@+id/button50" style="@style/DarkButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" android:text="₱50" />
+                <Button android:id="@+id/button100" style="@style/DarkButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" android:text="₱100" />
+                <Button android:id="@+id/button150" style="@style/DarkButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" android:text="₱150" />
+                <Button android:id="@+id/button200" style="@style/DarkButton" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:layout_margin="4dp" android:text="₱200" />
             </GridLayout>
 
-            <!-- Custom Amount Input -->
             <EditText
                 android:id="@+id/customAmountInput"
                 android:layout_width="0dp"
@@ -139,7 +100,7 @@
                 app:layout_constraintTop_toBottomOf="@id/loadSelectionButtons"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/addCustomAmountButton"/>
-            
+
             <Button
                 android:id="@+id/addCustomAmountButton"
                 style="@style/DarkButton"
@@ -150,15 +111,45 @@
                 app:layout_constraintBottom_toBottomOf="@id/customAmountInput"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <!-- Image Upload Area -->
+            <GridLayout
+                android:id="@+id/actionButtonsContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:layout_marginTop="8dp"
+                app:layout_constraintTop_toBottomOf="@id/customAmountInput"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <Button
+                    android:id="@+id/undoButton"
+                    style="@style/DarkButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Undo Last"
+                    android:textColor="#FFA500" />
+
+                <Button
+                    android:id="@+id/clearButton"
+                    style="@style/DarkButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="4dp"
+                    android:text="Clear All"
+                    android:textColor="#FF5252" />
+            </GridLayout>
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/imageUploadCard"
                 android:layout_width="0dp"
                 android:layout_height="150dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 app:cardBackgroundColor="#2A2A2A"
                 app:cardCornerRadius="16dp"
-                app:layout_constraintTop_toBottomOf="@id/customAmountInput"
+                app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -184,19 +175,29 @@
                 </RelativeLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Submit Button -->
             <Button
                 android:id="@+id/submitButton"
                 style="@style/DarkButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="Submit Payment"
-                android:layout_marginTop="32dp"
+                android:layout_marginTop="24dp"
                 app:layout_constraintTop_toBottomOf="@id/imageUploadCard"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:indeterminateTint="#FFFFFF"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

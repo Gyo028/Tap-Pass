@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -120,7 +119,7 @@ class HomeFragment : Fragment() {
                         }
 
                         loadBtn.setOnClickListener {
-                            startActivity(Intent(requireActivity(), LoadNewActivity::class.java))
+                            startActivity(Intent(requireActivity(), LoadActivity::class.java))
                         }
 
                         sendBtn.setOnClickListener {

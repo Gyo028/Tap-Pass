@@ -17,6 +17,7 @@ class ConfirmSendActivity : AppCompatActivity() {
 
     private lateinit var fstore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
+    private val MAX_LIMIT = 50000.0 // ₱50,000 limit
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,19 +33,17 @@ class ConfirmSendActivity : AppCompatActivity() {
         fstore = FirebaseFirestore.getInstance()
 
         val amountStr = intent.getStringExtra("amount")
-        val amount = amountStr?.toDoubleOrNull()
+        val amount = amountStr?.toDoubleOrNull() ?: 0.0
 
-        if (amount == null || amount <= 0) {
+        if (amount <= 0) {
             Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show()
-            finish() // Close activity if amount is invalid
+            finish()
             return
         }
 
-        // Now safely set the formatted value
         val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
         amountValue.text = format.format(amount)
 
-        // Set recipient details
         val rfid = intent.getStringExtra("rfid") ?: ""
         val name = intent.getStringExtra("recipientName") ?: ""
         recipientName.text = name
@@ -53,20 +52,14 @@ class ConfirmSendActivity : AppCompatActivity() {
         backButton.setOnClickListener { finish() }
 
         confirmButton.setOnClickListener {
-            if (amount <= 0) {
-                Toast.makeText(this, "Invalid amount", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            confirmButton.isEnabled = false // Prevent double clicks
             sendMoney(amount, rfid)
-            finish()
-            startActivity(Intent(this, MainActivity::class.java))
         }
     }
 
     private fun sendMoney(amount: Double, recipientRfid: String) {
         val senderUid = auth.currentUser?.uid ?: return
 
-        // Find recipient by RFID
         fstore.collection("users")
             .whereEqualTo("rfidUid", recipientRfid)
             .limit(1)
@@ -74,25 +67,20 @@ class ConfirmSendActivity : AppCompatActivity() {
             .addOnSuccessListener { query ->
                 if (query.isEmpty) {
                     Toast.makeText(this, "Recipient not found", Toast.LENGTH_SHORT).show()
+                    findViewById<Button>(R.id.confirmButton).isEnabled = true
                     return@addOnSuccessListener
                 }
 
                 val recipientDoc = query.documents[0]
-                val recipientUid = recipientDoc.id
-
-                processTransaction(senderUid, recipientUid, amount, recipientRfid)
+                processTransaction(senderUid, recipientDoc.id, amount, recipientRfid)
             }
             .addOnFailureListener {
                 Toast.makeText(this, it.message, Toast.LENGTH_LONG).show()
+                findViewById<Button>(R.id.confirmButton).isEnabled = true
             }
     }
 
-    private fun processTransaction(
-        senderUid: String,
-        recipientUid: String,
-        amount: Double,
-        recipientRfid: String
-    ) {
+    private fun processTransaction(senderUid: String, recipientUid: String, amount: Double, recipientRfid: String) {
         val senderRef = fstore.collection("users").document(senderUid)
         val recipientRef = fstore.collection("users").document(recipientUid)
 
@@ -102,52 +90,71 @@ class ConfirmSendActivity : AppCompatActivity() {
 
             val senderBalance = senderSnap.getDouble("balance") ?: 0.0
             val recipientBalance = recipientSnap.getDouble("balance") ?: 0.0
+            val senderName = senderSnap.getString("fullName") ?: "Unknown"
+            val recipientName = recipientSnap.getString("fullName") ?: "Unknown"
 
-            val senderName = senderSnap.getString("fullName") ?: "Unknown User"
-            val recipientName = recipientSnap.getString("fullName") ?: "Unknown User"
-            val senderRfid = senderSnap.getString("rfidUid") ?: ""
-
-            //Insufficient balance
+            // 1. SENDER CHECK: Enough money?
             if (amount > senderBalance) {
                 throw Exception("Insufficient balance")
+            }
+
+            // 2. RECIPIENT CHECK: Will they exceed 50k?
+            if (recipientBalance + amount > MAX_LIMIT) {
+                throw Exception("Recipient's balance would exceed ₱50,000 limit.")
             }
 
             // Update balances
             transaction.update(senderRef, "balance", senderBalance - amount)
             transaction.update(recipientRef, "balance", recipientBalance + amount)
 
-            //Sender transaction record
+            // Create Transaction Records
             val senderTx = hashMapOf(
                 "type" to "SEND",
                 "amount" to amount,
                 "otherUserRfid" to recipientRfid,
-                "otherUserName" to recipientName, // Added this
+                "otherUserName" to recipientName,
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
-            //Recipient transaction record
             val recipientTx = hashMapOf(
                 "type" to "RECEIVE",
                 "amount" to amount,
-                "otherUserRfid" to senderRfid,
-                "otherUserName" to senderName, // Added this
+                "otherUserRfid" to senderSnap.getString("rfidUid"),
+                "otherUserName" to senderName,
                 "createdAt" to FieldValue.serverTimestamp()
             )
 
-            transaction.set(
-                senderRef.collection("transactions").document(),
-                senderTx
+            transaction.set(senderRef.collection("transactions").document(), senderTx)
+            transaction.set(recipientRef.collection("transactions").document(), recipientTx)
+
+            // --- ADD INBOX NOTIFICATIONS ---
+            val senderInbox = hashMapOf(
+                "title" to "Money Sent",
+                "message" to "You sent ₱$amount to $recipientName",
+                "timestamp" to FieldValue.serverTimestamp(),
+                "isRead" to false,
+                "type" to "SEND"
             )
-            transaction.set(
-                recipientRef.collection("transactions").document(),
-                recipientTx
+            val recipientInbox = hashMapOf(
+                "title" to "Money Received",
+                "message" to "You received ₱$amount from $senderName",
+                "timestamp" to FieldValue.serverTimestamp(),
+                "isRead" to false,
+                "type" to "RECEIVE"
             )
+
+            transaction.set(senderRef.collection("inbox").document(), senderInbox)
+            transaction.set(recipientRef.collection("inbox").document(), recipientInbox)
 
             null
         }.addOnSuccessListener {
             Toast.makeText(this, "Transfer successful", Toast.LENGTH_SHORT).show()
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+            startActivity(intent)
             finish()
         }.addOnFailureListener {
+            findViewById<Button>(R.id.confirmButton).isEnabled = true
             Toast.makeText(this, it.message ?: "Transaction failed", Toast.LENGTH_LONG).show()
         }
     }

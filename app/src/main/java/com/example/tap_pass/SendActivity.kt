@@ -14,12 +14,12 @@ class SendActivity : AppCompatActivity() {
     private lateinit var fstore: FirebaseFirestore
     private lateinit var auth: FirebaseAuth
     private lateinit var balanceText: TextView
+    private val MAX_LIMIT = 50000.0 // The 50k restriction
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_send)
 
-        // 1. Initialize Views
         val backButton: ImageView = findViewById(R.id.backButton)
         val nextButton: Button = findViewById(R.id.nextButton)
         val amountInput: EditText = findViewById(R.id.amountToSendInput)
@@ -31,49 +31,65 @@ class SendActivity : AppCompatActivity() {
 
         val currentUserId = auth.currentUser?.uid ?: return
 
-        // 2. Real-time Balance Listener (Shows YOUR current balance)
+        // YOUR Balance Listener
         fstore.collection("users")
             .document(currentUserId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-                val balance = snapshot.getLong("balance") ?: 0
-                val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
-                balanceText.text = format.format(balance)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val balance = snapshot.getDouble("balance") ?: 0.0
+                    val format = NumberFormat.getCurrencyInstance(Locale("en", "PH"))
+                    balanceText.text = format.format(balance)
+                }
             }
 
         backButton.setOnClickListener { finish() }
 
-        // 3. Next Button Logic
         nextButton.setOnClickListener {
-            val amount = amountInput.text.toString().trim()
+            val amountStr = amountInput.text.toString().trim()
             val rfid = rfidInput.text.toString().trim()
 
-            if (amount.isNotEmpty() && rfid.isNotEmpty()) {
-                // LOOKUP: Check if the RFID exists and get the Name BEFORE moving to Confirm screen
-                fstore.collection("users")
-                    .whereEqualTo("rfidUid", rfid)
-                    .get()
-                    .addOnSuccessListener { query ->
-                        if (!query.isEmpty) {
-                            val recipientDoc = query.documents[0]
-                            val name = recipientDoc.getString("fullName") ?: "Unknown User"
+            if (amountStr.isEmpty() || rfid.isEmpty()) {
+                Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-                            // PASS DATA: Send amount, rfid, AND the name we just found
+            val amountValue = amountStr.toDoubleOrNull() ?: 0.0
+
+            // 1. LOOKUP: Check recipient
+            fstore.collection("users")
+                .whereEqualTo("rfidUid", rfid)
+                .get()
+                .addOnSuccessListener { query ->
+                    if (!query.isEmpty) {
+                        val recipientDoc = query.documents[0]
+                        val name = recipientDoc.getString("fullName") ?: "Unknown User"
+                        val recipientBalance = recipientDoc.getDouble("balance") ?: 0.0
+
+                        // 2. RESTRICTION: Check if recipient will exceed 50k
+                        if (recipientBalance + amountValue > MAX_LIMIT) {
+                            val remainingSpace = MAX_LIMIT - recipientBalance
+                            Toast.makeText(
+                                this,
+                                "Recipient cannot receive this amount. Limit: ₱50,000. They can only receive ₱${String.format("%.2f", remainingSpace)} more.",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            // 3. PROCEED: If everything is okay
                             val intent = Intent(this, ConfirmSendActivity::class.java)
-                            intent.putExtra("amount", amount)
+                            intent.putExtra("amount", amountStr)
                             intent.putExtra("rfid", rfid)
                             intent.putExtra("recipientName", name)
+                            // Optional: pass recipient UID to ConfirmSendActivity to save another lookup
+                            intent.putExtra("recipientUid", recipientDoc.id)
                             startActivity(intent)
-                        } else {
-                            Toast.makeText(this, "RFID not registered", Toast.LENGTH_SHORT).show()
                         }
+                    } else {
+                        Toast.makeText(this, "RFID not registered", Toast.LENGTH_SHORT).show()
                     }
-                    .addOnFailureListener {
-                        Toast.makeText(this, "Error finding user", Toast.LENGTH_SHORT).show()
-                    }
-            } else {
-                Toast.makeText(this, "Please enter all fields", Toast.LENGTH_SHORT).show()
-            }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(this, "Error finding user", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 }
