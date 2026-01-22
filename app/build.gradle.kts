@@ -11,7 +11,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.midterms"
+        applicationId = "com.example.tap_pass"
         minSdk = 30
         targetSdk = 36
         versionCode = 1

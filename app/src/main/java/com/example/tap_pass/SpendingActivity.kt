@@ -9,6 +9,13 @@ class SpendingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_spending)
 
+        // Load the fragment into the container
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, SpendingFragment())
+                .commit()
+        }
+
         val backButton: ImageView = findViewById(R.id.backButton)
         backButton.setOnClickListener {
             finish()
