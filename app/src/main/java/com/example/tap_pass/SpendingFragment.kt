@@ -20,30 +20,38 @@ class SpendingFragment : Fragment(R.layout.fragment_spending) {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    // Timer Variables
     private val handler = Handler(Looper.getMainLooper())
     private var totalAllowedSeconds: Long = 0
     private var startTimeMillis: Long = 0
+    private val hourlyRate = 20.0
 
-    // History Variables
     private lateinit var adapter: SessionAdapter
     private val historyList = mutableListOf<SessionHistory>()
 
     private val countdownRunnable = object : Runnable {
         override fun run() {
-            val elapsedMillis = System.currentTimeMillis() - startTimeMillis
-            val elapsedSeconds = elapsedMillis / 1000
+            val currentMillis = System.currentTimeMillis()
+            val elapsedSeconds = (currentMillis - startTimeMillis) / 1000
             val remainingSeconds = totalAllowedSeconds - elapsedSeconds
 
             val timerText = view?.findViewById<TextView>(R.id.timerText)
             val statusText = view?.findViewById<TextView>(R.id.pcStatusText)
+            val costText = view?.findViewById<TextView>(R.id.itemEstimatedCost)
+
+            // Calculation: (Hourly Rate / 3600 seconds) * seconds passed
+            val estimatedCost = elapsedSeconds * (hourlyRate / 3600.0)
 
             if (remainingSeconds > 0) {
                 val h = remainingSeconds / 3600
                 val m = (remainingSeconds % 3600) / 60
                 val s = remainingSeconds % 60
+
                 timerText?.text = String.format("%02d:%02d:%02d", h, m, s)
                 timerText?.setTextColor(if (remainingSeconds < 60) Color.RED else Color.WHITE)
+
+                // Show running cost updating every second
+                costText?.text = String.format("Est. Cost: ₱%.2f", estimatedCost)
+
                 handler.postDelayed(this, 1000)
             } else {
                 timerText?.text = "00:00:00"
@@ -58,14 +66,40 @@ class SpendingFragment : Fragment(R.layout.fragment_spending) {
         super.onViewCreated(view, savedInstanceState)
         val userId = auth.currentUser?.uid ?: return
 
-        // 1. Setup RecyclerView for History
         setupRecyclerView(view)
-
-        // 2. Start Active Session Listener (Your existing logic)
         listenForActiveSession(userId)
-
-        // 3. Start History Listener (New recording logic)
         listenForPastSessions(userId)
+
+        // Live Balance Listener
+        db.collection("users").document(userId).addSnapshotListener { snapshot, _ ->
+            val balance = snapshot?.getDouble("balance") ?: 0.0
+            view.findViewById<TextView>(R.id.currentBalanceText)?.text = String.format("Balance: ₱%.2f", balance)
+        }
+    }
+
+    private fun listenForActiveSession(userId: String) {
+        db.collection("users").document(userId).collection("sessions")
+            .whereEqualTo("status", "STARTED")
+            .addSnapshotListener { snapshots, e ->
+                if (snapshots != null && !snapshots.isEmpty) {
+                    val doc = snapshots.documents[0]
+                    // Use Server Time to keep sync with Python
+                    startTimeMillis = doc.getTimestamp("startTime")?.toDate()?.time ?: System.currentTimeMillis()
+                    val pcName = doc.getString("pcNumber") ?: "PC"
+
+                    db.collection("users").document(userId).get().addOnSuccessListener { userDoc ->
+                        val balance = userDoc.getDouble("balance") ?: 0.0
+                        totalAllowedSeconds = ((balance / hourlyRate) * 3600).toLong()
+
+                        view?.findViewById<TextView>(R.id.pcStatusText)?.text = "$pcName ACTIVE"
+                        view?.findViewById<TextView>(R.id.pcStatusText)?.setTextColor(Color.GREEN)
+                        handler.post(countdownRunnable)
+                    }
+                } else {
+                    stopTimer()
+                    resetUI()
+                }
+            }
     }
 
     private fun setupRecyclerView(view: View) {
@@ -75,74 +109,28 @@ class SpendingFragment : Fragment(R.layout.fragment_spending) {
         recyclerView.adapter = adapter
     }
 
-    private fun listenForActiveSession(userId: String) {
-        db.collection("users").document(userId).collection("sessions")
-            .whereEqualTo("status", "STARTED")
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    Log.e("TIMER_TEST", "Firestore Error: ${e.message}")
-                    return@addSnapshotListener
-                }
-
-                if (snapshots != null && !snapshots.isEmpty) {
-                    val doc = snapshots.documents[0]
-                    val startTime = doc.getTimestamp("startTime")?.toDate()?.time ?: System.currentTimeMillis()
-                    val pcName = doc.getString("pcNumber") ?: "PC"
-
-                    db.collection("users").document(userId).get().addOnSuccessListener { userDoc ->
-                        val balance = userDoc.getDouble("balance") ?: 0.0
-                        initializeCountdown(balance, startTime, pcName)
-                    }
-                } else {
-                    stopTimer()
-                    view?.findViewById<TextView>(R.id.pcStatusText)?.text = "PC OFFLINE"
-                    view?.findViewById<TextView>(R.id.pcStatusText)?.setTextColor(Color.GRAY)
-                    view?.findViewById<TextView>(R.id.timerText)?.text = "00:00:00"
-                }
-            }
-    }
-
     private fun listenForPastSessions(userId: String) {
         db.collection("users").document(userId).collection("sessions")
             .whereIn("status", listOf("ENDED", "COMPLETED"))
-            .orderBy("endTime", Query.Direction.DESCENDING) // Newest on top
-            .addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    Log.e("HISTORY_LOG", "History listen failed: ${e.message}")
-                    return@addSnapshotListener
-                }
-
+            .orderBy("endTime", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, _ ->
                 if (snapshots != null) {
                     historyList.clear()
                     for (doc in snapshots) {
-                        val session = doc.toObject(SessionHistory::class.java)
-                        historyList.add(session)
+                        historyList.add(doc.toObject(SessionHistory::class.java))
                     }
                     adapter.notifyDataSetChanged()
-                    Log.d("HISTORY_LOG", "Loaded ${historyList.size} past sessions")
                 }
             }
     }
 
-    private fun initializeCountdown(balance: Double, serverStartTime: Long, pcName: String) {
-        stopTimer()
-        val hourlyRate = 20.0
-        totalAllowedSeconds = ((balance / hourlyRate) * 3600).toLong()
-        startTimeMillis = serverStartTime
-
-        val statusText = view?.findViewById<TextView>(R.id.pcStatusText)
-        statusText?.text = "$pcName ACTIVE"
-        statusText?.setTextColor(Color.GREEN)
-
-        handler.post(countdownRunnable)
+    private fun resetUI() {
+        view?.findViewById<TextView>(R.id.pcStatusText)?.text = "PC OFFLINE"
+        view?.findViewById<TextView>(R.id.pcStatusText)?.setTextColor(Color.GRAY)
+        view?.findViewById<TextView>(R.id.timerText)?.text = "00:00:00"
+        view?.findViewById<TextView>(R.id.itemEstimatedCost)?.text = "Est. Cost: ₱0.00"
     }
 
-    private fun stopTimer() {
-        handler.removeCallbacks(countdownRunnable)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        stopTimer()
-    }
+    private fun stopTimer() { handler.removeCallbacks(countdownRunnable) }
+    override fun onDestroyView() { super.onDestroyView(); stopTimer() }
 }
