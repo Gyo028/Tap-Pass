@@ -35,7 +35,7 @@ class HomeFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private val handler = Handler(Looper.getMainLooper())
     private var timer: Timer? = null
-    private val images = listOf(R.drawable.ads1, R.drawable.ads2)
+    private val images = listOf(R.drawable.advertise1, R.drawable.advertise2)
 
     // Buttons
     private lateinit var loadBtn: Button

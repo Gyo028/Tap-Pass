@@ -49,21 +49,29 @@
             android:textSize="14sp"
             android:layout_marginBottom="12dp"/>
 
-        <EditText
-            android:id="@+id/login_password"
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:maxLength="15"
-            android:background="@drawable/input_bg"
-            android:drawableStart="@drawable/lock"
-            android:drawablePadding="12dp"
-            android:padding="16dp"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="16dp"
+            app:passwordToggleEnabled="true"
+            app:passwordToggleTint="#FFFFFF"
+            app:hintEnabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/login_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:maxLength="15"
+                android:background="@drawable/input_bg"
+                android:drawableStart="@drawable/lock"
+                android:drawablePadding="12dp"
+                android:padding="16dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#FFFFFF"
+                android:textSize="14sp"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <ProgressBar
             android:id="@+id/progressbar"

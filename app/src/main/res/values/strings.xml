@@ -2,4 +2,6 @@
     <string name="app_name">Tap-Pass</string>
     <string name="sign_in_text">Already have an Account? Sign in</string>
     <string name="log_in_text">Don\'t have an account? Sign up</string>
+    <string name="terms_agree_text">I Agree to the Terms and Conditions</string>
+    <string name="data_policy_agree_text">I Agree to the Data Policy Act</string>
 </resources>

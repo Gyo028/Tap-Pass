@@ -54,7 +54,7 @@
             android:name=".TransactionsActivity"
             android:exported="false" />
         <activity
-            android:name=".AdminRequestsActivity"
+            android:name=".AdminActivity"
             android:exported="false" />
     </application>
 

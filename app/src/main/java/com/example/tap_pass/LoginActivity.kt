@@ -56,7 +56,7 @@ class LoginActivity : AppCompatActivity() {
         // Hardcoded admin check
         if (email == "admin" && password == "admin1") {
             Toast.makeText(this, "Admin login successful", Toast.LENGTH_LONG).show()
-            startActivity(Intent(this, AdminRequestsActivity::class.java))
+            startActivity(Intent(this, AdminActivity::class.java))
             finish()
             return // Skip Firebase authentication for admin
         }
