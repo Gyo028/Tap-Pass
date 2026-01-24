@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Midterms">
         <activity
-            android:name=".LoginActivity"
+            android:name=".login_register.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -21,40 +21,40 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".home_main.MainActivity"
             android:exported="false" />
         <activity
-            android:name=".Register"
+            android:name=".login_register.Register"
             android:exported="false" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".profile.ProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".ResetPinActivity"
+            android:name=".profile.ResetPinActivity"
             android:exported="false" />
         <activity
-            android:name=".SetupProfileActivity"
+            android:name=".login_register.SetupProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".LoadActivity"
+            android:name=".inbox.LoadActivity"
             android:exported="false" />
         <activity
-            android:name=".UpcomingRequestsActivity"
+            android:name=".admin.UpcomingRequestsActivity"
             android:exported="false" />
         <activity
-            android:name=".SendActivity"
+            android:name=".transactions.SendActivity"
             android:exported="false" />
         <activity
-            android:name=".ConfirmSendActivity"
+            android:name=".transactions.ConfirmSendActivity"
             android:exported="false" />
         <activity
-            android:name=".ReceiveQrActivity"
+            android:name=".transactions.ReceiveQrActivity"
             android:exported="false" />
         <activity
-            android:name=".TransactionsActivity"
+            android:name=".transactions.TransactionsActivity"
             android:exported="false" />
         <activity
-            android:name=".AdminActivity"
+            android:name=".admin.AdminActivity"
             android:exported="false" />
     </application>
 

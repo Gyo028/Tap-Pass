@@ -54,6 +54,10 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+    // Correct way to add Glide
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    // If you are using Kotlin, it's also recommended to add the compiler
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
