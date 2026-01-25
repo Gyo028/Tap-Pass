@@ -8,82 +8,104 @@ import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.Button
-import android.widget.EditText
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.tap_pass.R
+import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
 
 class ChangePasswordActivity : AppCompatActivity() {
 
-    // Hardcoded password for testing
-    private var MOCK_CURRENT_PASSWORD = "password123"
+    private lateinit var auth: FirebaseAuth
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Enable Edge-to-Edge Drawing
+        // 1. UI Setup (Edge-to-Edge)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         }
-
         setContentView(R.layout.activity_change_password)
-
-        // Make Status Bar Transparent so background drawable shows through
         window.statusBarColor = Color.TRANSPARENT
 
-        // 2. Apply Immersive UI
-        window.decorView.post {
-            hideSystemUI()
-        }
+        window.decorView.post { hideSystemUI() }
 
-        // 3. Initialize Views
-        val currentPwdEditText: EditText = findViewById(R.id.currentPassword)
-        val newPwdEditText: EditText = findViewById(R.id.newPassword)
-        val confirmNewPwdEditText: EditText = findViewById(R.id.confirmNewPassword)
-        val confirmButton: Button = findViewById(R.id.confirm_reset_button)
-        val cancelButton: Button = findViewById(R.id.cancel_button)
+        // 2. Initialize Firebase and Views
+        auth = FirebaseAuth.getInstance()
+        progressBar = findViewById(R.id.progressbar)
 
-        // 4. Navigation - Back to Profile
+        val currentPwdEditText = findViewById<TextInputEditText>(R.id.currentPassword)
+        val newPwdEditText = findViewById<TextInputEditText>(R.id.newPassword)
+        val confirmNewPwdEditText = findViewById<TextInputEditText>(R.id.confirmNewPassword)
+        val confirmButton = findViewById<Button>(R.id.confirm_reset_button)
+        val cancelButton = findViewById<Button>(R.id.cancel_button)
+
+        // 3. Button Listeners
         cancelButton.setOnClickListener { finish() }
 
-        // 5. Hardcoded Reset Logic
         confirmButton.setOnClickListener {
             val currentPwd = currentPwdEditText.text.toString().trim()
             val newPwd = newPwdEditText.text.toString().trim()
             val confirmPwd = confirmNewPwdEditText.text.toString().trim()
 
-            // Clear previous errors
-            currentPwdEditText.error = null
-            newPwdEditText.error = null
-            confirmNewPwdEditText.error = null
+            // Basic Validation
+            if (currentPwd.isEmpty() || newPwd.isEmpty() || confirmPwd.isEmpty()) {
+                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-            when {
-                currentPwd.isEmpty() || newPwd.isEmpty() || confirmPwd.isEmpty() -> {
-                    Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                }
-                currentPwd != MOCK_CURRENT_PASSWORD -> {
-                    currentPwdEditText.error = "Incorrect current password"
-                }
-                newPwd.length < 6 -> {
-                    newPwdEditText.error = "Password must be at least 6 characters"
-                }
-                confirmPwd != newPwd -> {
-                    confirmNewPwdEditText.error = "Passwords do not match"
-                }
-                else -> {
-                    // Update successful
-                    MOCK_CURRENT_PASSWORD = newPwd
-                    Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show()
-                    finish()
+            if (newPwd.length < 6) {
+                newPwdEditText.error = "Password must be at least 6 characters"
+                return@setOnClickListener
+            }
+
+            if (newPwd != confirmPwd) {
+                confirmNewPwdEditText.error = "Passwords do not match"
+                return@setOnClickListener
+            }
+
+            // Start Firebase Update
+            performPasswordUpdate(currentPwd, newPwd)
+        }
+    }
+
+    private fun performPasswordUpdate(currentPwd: String, newPwd: String) {
+        val user = auth.currentUser
+
+        if (user != null && user.email != null) {
+            progressBar.visibility = View.VISIBLE
+
+            // Re-authenticate user for security
+            val credential = EmailAuthProvider.getCredential(user.email!!, currentPwd)
+
+            user.reauthenticate(credential).addOnCompleteListener { reAuthTask ->
+                if (reAuthTask.isSuccessful) {
+                    // Re-auth success, proceed to update
+                    user.updatePassword(newPwd).addOnCompleteListener { updateTask ->
+                        progressBar.visibility = View.GONE
+                        if (updateTask.isSuccessful) {
+                            Toast.makeText(this, "Password updated successfully!", Toast.LENGTH_SHORT).show()
+                            finish()
+                        } else {
+                            Toast.makeText(this, "Error: ${updateTask.exception?.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } else {
+                    progressBar.visibility = View.GONE
+                    Toast.makeText(this, "Authentication failed. Check current password.", Toast.LENGTH_SHORT).show()
                 }
             }
+        } else {
+            Toast.makeText(this, "User not found. Please log in again.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { controller ->
-                // Hide only status bars to keep navigation accessible, or both for full immersive
                 controller.hide(WindowInsets.Type.statusBars())
                 controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
