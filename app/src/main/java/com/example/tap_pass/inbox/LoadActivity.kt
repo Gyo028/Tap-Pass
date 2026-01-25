@@ -1,8 +1,13 @@
 package com.example.tap_pass.inbox
 
+import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
@@ -25,6 +30,7 @@ class LoadActivity : AppCompatActivity() {
     private lateinit var totalAmountValue: TextView
     private lateinit var progressBar: ProgressBar
     private lateinit var submitButton: Button
+    private lateinit var cancelButton: Button // Added Cancel Button
 
     private var imageUri: Uri? = null
     private var totalAmount = 0.0
@@ -43,7 +49,18 @@ class LoadActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable edge-to-edge drawing
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+        }
+
         setContentView(R.layout.activity_load)
+
+        // Hide Status Bar (Immersive)
+        window.decorView.post {
+            hideSystemUI()
+        }
 
         // Initialize Views
         imagePreview = findViewById(R.id.imagePreview)
@@ -51,9 +68,12 @@ class LoadActivity : AppCompatActivity() {
         uploadButton = findViewById(R.id.uploadButton)
         progressBar = findViewById(R.id.progressBar)
         submitButton = findViewById(R.id.submitButton)
+        cancelButton = findViewById(R.id.cancelButton) // Initialized from XML
 
-        // Navigation & Upload
-        findViewById<ImageView>(R.id.backButton).setOnClickListener { finish() }
+        // Navigation (Bottom Buttons)
+        cancelButton.setOnClickListener { finish() }
+
+        // Image Upload
         uploadButton.setOnClickListener { pickImageLauncher.launch("image/*") }
 
         // Preset Amount Buttons
@@ -114,13 +134,13 @@ class LoadActivity : AppCompatActivity() {
     private fun setLoading(isLoading: Boolean) {
         progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         submitButton.isEnabled = !isLoading
+        cancelButton.isEnabled = !isLoading // Disable cancel during upload
         submitButton.alpha = if (isLoading) 0.5f else 1.0f
     }
 
     private fun startSubmissionProcess() {
         val user = auth.currentUser ?: return
 
-        // Validation
         if (totalAmount <= 0) {
             showAlert("Error", "Please enter a valid amount.")
             return
@@ -132,23 +152,20 @@ class LoadActivity : AppCompatActivity() {
 
         setLoading(true)
 
-        // FETCH USER PROFILE DATA FIRST
         db.collection("users").document(user.uid).get()
             .addOnSuccessListener { document ->
                 if (document.exists()) {
                     val realName = document.getString("fullName") ?: "Unknown User"
                     val rfid = document.getString("rfidUid") ?: "No RFID Assigned"
-
-                    // Now submit with the actual data
                     submitRequestToAdmin(user.uid, realName, rfid)
                 } else {
                     setLoading(false)
-                    showAlert("Profile Error", "User record not found in database.")
+                    showAlert("Profile Error", "User record not found.")
                 }
             }
             .addOnFailureListener { e ->
                 setLoading(false)
-                showAlert("Network Error", "Could not verify user: ${e.message}")
+                showAlert("Network Error", e.message ?: "Failed to verify profile.")
             }
     }
 
@@ -172,7 +189,7 @@ class LoadActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 setLoading(false)
-                showAlert("Firestore Error", e.message ?: "Failed to submit request.")
+                showAlert("Firestore Error", e.message ?: "Failed to submit.")
             }
     }
 
@@ -191,5 +208,24 @@ class LoadActivity : AppCompatActivity() {
             .setMessage(msg)
             .setPositiveButton("OK", null)
             .show()
+    }
+
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let { controller ->
+                // Hide only status bar to match Home Screen; keep navigation if desired,
+                // or hide both for true full screen:
+                controller.hide(WindowInsets.Type.statusBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+        }
+        // Make the system bar area transparent so the background draws through
+        window.statusBarColor = Color.TRANSPARENT
     }
 }
