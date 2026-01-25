@@ -9,6 +9,7 @@ import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -24,6 +25,7 @@ import com.example.tap_pass.admin.AdminActivity
 import com.example.tap_pass.home_main.MainActivity
 import com.example.tap_pass.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.firestore.FirebaseFirestore
 
 class LoginActivity : AppCompatActivity() {
@@ -37,16 +39,12 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_login)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         }
-
-        setContentView(R.layout.activity_login)
-
-        window.decorView.post {
-            hideSystemUI()
-        }
+        window.decorView.post { hideSystemUI() }
 
         auth = FirebaseAuth.getInstance()
         db = FirebaseFirestore.getInstance()
@@ -55,26 +53,14 @@ class LoginActivity : AppCompatActivity() {
         passwordEditText = findViewById(R.id.login_password)
         loginButton = findViewById(R.id.login_button)
         progressBar = findViewById(R.id.progressbar)
-        val registerTextView: TextView = findViewById(R.id.registerText)
 
-        progressBar.visibility = View.GONE
+        val registerTV = findViewById<TextView>(R.id.registerText)
+        val forgotPassBtn = findViewById<Button>(R.id.forgotPasswordButton)
+
         loginButton.setOnClickListener { loginUser() }
-        setupRegisterLink(registerTextView)
-    }
+        forgotPassBtn.setOnClickListener { handleForgotPassword() }
 
-    private fun hideSystemUI() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.let { controller ->
-                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
-            )
-        }
+        setupRegisterLink(registerTV)
     }
 
     private fun loginUser() {
@@ -86,52 +72,74 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        loginButton.visibility = View.GONE
+        loginButton.visibility = View.INVISIBLE
         progressBar.visibility = View.VISIBLE
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     val user = auth.currentUser
-
-                    // Verify if email is confirmed
                     if (user != null && user.isEmailVerified) {
                         checkUserRole(user.uid)
                     } else {
-                        // User exists but hasn't clicked the link
-                        progressBar.visibility = View.GONE
-                        loginButton.visibility = View.VISIBLE
+                        resetUI()
                         showVerificationWarningDialog()
-                        auth.signOut()
                     }
                 } else {
-                    resetUIWithError("Login failed: ${task.exception?.message}")
+                    resetUI()
+                    val exception = task.exception
+                    val errorCode = (exception as? FirebaseAuthException)?.errorCode
+
+                    // CHECK THIS IN LOGCAT (Filter: AUTH_DEBUG)
+                    Log.e("AUTH_DEBUG", "Login Failed. Code: $errorCode | Msg: ${exception?.message}")
+
+                    val errorMessage = when (errorCode) {
+                        "ERROR_INVALID_EMAIL" -> "The email format is incorrect."
+                        "ERROR_WRONG_PASSWORD" -> "Incorrect password."
+                        "ERROR_USER_NOT_FOUND" -> "No account exists for this email."
+                        "ERROR_USER_DISABLED" -> "This account has been disabled."
+                        "ERROR_TOO_MANY_REQUESTS" -> "Too many attempts. Try again later."
+                        "ERROR_OPERATION_NOT_ALLOWED" -> "Login provider not enabled in Firebase."
+                        else -> "Login Failed: ${exception?.localizedMessage}"
+                    }
+                    Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
                 }
             }
     }
 
+    private fun handleForgotPassword() {
+        val email = emailEditText.text.toString().trim()
+        if (email.isEmpty()) {
+            emailEditText.error = "Enter email first"
+            return
+        }
+
+        auth.sendPasswordResetEmail(email).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(this, "Reset link sent to $email", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun showVerificationWarningDialog() {
-        // Use your theme here to keep the background consistent
+        val user = auth.currentUser
         val builder = AlertDialog.Builder(this, R.style.TermsDialogTheme)
             .setTitle("Email Not Verified")
-            .setMessage("You haven't verified your email yet. Please check your inbox for the link sent during registration.")
-            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .setMessage("Please verify your email address to continue.")
+            .setCancelable(false)
+            .setPositiveButton("OK") { _, _ -> auth.signOut() }
             .setNeutralButton("Resend Email") { _, _ ->
-                auth.currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        Toast.makeText(this, "Verification email resent!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Error resending email: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                    }
+                user?.sendEmailVerification()?.addOnCompleteListener {
+                    Toast.makeText(this, "Verification email sent!", Toast.LENGTH_SHORT).show()
+                    auth.signOut()
                 }
             }
-
-        val alertDialog = builder.create()
-        alertDialog.show()
-
-        // Set button colors to white after the dialog is shown
-        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
-        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(Color.WHITE)
+        val alert = builder.create()
+        alert.show()
+        alert.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
+        alert.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(Color.WHITE)
     }
 
     private fun checkUserRole(uid: String) {
@@ -153,32 +161,41 @@ class LoginActivity : AppCompatActivity() {
                     finish()
                 }
             }
-        }.addOnFailureListener { resetUIWithError("Role verification failed") }
-    }
-
-    private fun resetUIWithError(message: String) {
-        progressBar.visibility = View.GONE
-        loginButton.visibility = View.VISIBLE
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }.addOnFailureListener { resetUI() }
     }
 
     private fun setupRegisterLink(textView: TextView) {
-        val text = getString(R.string.log_in_text)
-        val spannableString = SpannableString(text)
-        val startIndex = text.indexOf("Sign up")
-        if (startIndex != -1) {
-            val clickableSpan = object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    startActivity(Intent(this@LoginActivity, Register::class.java))
-                }
-                override fun updateDrawState(ds: TextPaint) {
-                    ds.color = Color.parseColor("#DDA0FF")
-                    ds.isUnderlineText = true
-                }
+        val text = "Don't have an account? Sign up"
+        val ss = SpannableString(text)
+        val start = text.indexOf("Sign up")
+
+        val clickableSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                startActivity(Intent(this@LoginActivity, Register::class.java))
             }
-            spannableString.setSpan(clickableSpan, startIndex, startIndex + 7, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            textView.text = spannableString
-            textView.movementMethod = LinkMovementMethod.getInstance()
+            override fun updateDrawState(ds: TextPaint) {
+                ds.color = Color.parseColor("#DDA0FF")
+                ds.isUnderlineText = true
+            }
+        }
+        if (start != -1) {
+            ss.setSpan(clickableSpan, start, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        textView.text = ss
+        textView.movementMethod = LinkMovementMethod.getInstance()
+    }
+
+    private fun resetUI() {
+        progressBar.visibility = View.GONE
+        loginButton.visibility = View.VISIBLE
+    }
+
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let {
+                it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
         }
     }
 }

@@ -8,13 +8,13 @@
     android:padding="24dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:layout_width="wrap_content"
@@ -22,81 +22,94 @@
             android:text="Login"
             android:textColor="#FFFFFF"
             android:textSize="35sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="1dp"/>
+            android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/registerText"
+        <Button
+            android:id="@+id/forgotPasswordButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="0dp"
-            android:layout_marginBottom="5dp"
-            android:text="@string/log_in_text"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp" />
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:color/transparent"
+            android:text="Forgot Password?"
+            android:textAllCaps="false"
+            android:textColor="#DDA0FF"
+            android:textSize="14sp"
+            android:padding="0dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp" />
 
         <EditText
             android:id="@+id/login_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="E-mail"
+            android:layout_marginBottom="12dp"
             android:background="@drawable/input_bg"
             android:drawableStart="@drawable/email"
             android:drawablePadding="12dp"
+            android:hint="E-mail"
+            android:inputType="textEmailAddress"
             android:padding="16dp"
             android:textColor="#FFFFFF"
             android:textColorHint="#FFFFFF"
-            android:textSize="14sp"
-            android:layout_marginBottom="12dp"/>
+            android:textSize="14sp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
+            app:hintEnabled="false"
             app:passwordToggleEnabled="true"
-            app:passwordToggleTint="#FFFFFF"
-            app:hintEnabled="false">
+            app:passwordToggleTint="#FFFFFF">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/login_password"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:maxLength="15"
                 android:background="@drawable/input_bg"
                 android:drawableStart="@drawable/lock"
                 android:drawablePadding="12dp"
+                android:hint="Password"
+                android:inputType="textPassword"
+                android:maxLength="15"
                 android:padding="16dp"
                 android:textColor="#FFFFFF"
                 android:textColorHint="#FFFFFF"
-                android:textSize="14sp"/>
+                android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <ProgressBar
-            android:id="@+id/progressbar"
+        <FrameLayout
             android:layout_width="match_parent"
+            android:layout_height="52dp">
+
+            <Button
+                android:id="@+id/login_button"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:backgroundTint="#A020F0"
+                android:text="Login"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+            <ProgressBar
+                android:id="@+id/progressbar"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:indeterminateTint="@android:color/white"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/registerText"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:indeterminate="true"
-            android:indeterminateTint="@android:color/white"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/login_button"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:backgroundTint="#A020F0"
-            android:text="Login"
+            android:layout_gravity="center"
+            android:layout_marginTop="24dp"
+            android:text="Don't have an account? Sign up"
             android:textColor="#FFFFFF"
-            android:textStyle="bold"/>
-
-        <!-- Don't have an account -->
+            android:textSize="14sp" />
 
     </LinearLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

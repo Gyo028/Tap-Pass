@@ -23,24 +23,20 @@ class ProfileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Prepare for edge-to-edge drawing
+        // 1. UI Configuration
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         }
-
         setContentView(R.layout.activity_profile)
-
-        // Make background flow behind the status bar area
         window.statusBarColor = Color.TRANSPARENT
 
-        // 2. Hide system bars after the view is stable
         window.decorView.post {
             hideSystemUI()
         }
 
         auth = FirebaseAuth.getInstance()
 
-        // Initialize Views
+        // 2. View Initialization
         val fullNameTextView: TextView = findViewById(R.id.profile_full_name)
         val userIdTextView: TextView = findViewById(R.id.profile_user_id)
         val logoutButton: RelativeLayout = findViewById(R.id.logout_button)
@@ -49,15 +45,15 @@ class ProfileActivity : AppCompatActivity() {
         val upcomingRequestsButton: RelativeLayout = findViewById(R.id.upcoming_requests_button)
         val adminDivider: View = findViewById(R.id.admin_divider)
 
-        // Get user data passed from MainActivity
-        val fullName = intent.getStringExtra("fullName")
-        val username = intent.getStringExtra("username")
-        val rfid = intent.getStringExtra("rfid")
+        // 3. Data Population (with null-safety fallbacks)
+        val fullName = intent.getStringExtra("fullName") ?: "User"
+        val username = intent.getStringExtra("username") ?: ""
+        val rfid = intent.getStringExtra("rfid") ?: "Not Set"
 
         fullNameTextView.text = fullName
         userIdTextView.text = "RFID: $rfid"
 
-        // Admin-only access control logic
+        // 4. Admin Role Check
         val isAdmin = "Admin".equals(username, ignoreCase = true)
         if (isAdmin) {
             upcomingRequestsButton.visibility = View.VISIBLE
@@ -65,31 +61,43 @@ class ProfileActivity : AppCompatActivity() {
             upcomingRequestsButton.setOnClickListener {
                 startActivity(Intent(this, UpcomingRequestsActivity::class.java))
             }
+        } else {
+            upcomingRequestsButton.visibility = View.GONE
+            adminDivider.visibility = View.GONE
         }
 
-        // Standard Back Navigation
-        backButton.setOnClickListener { finish() }
-
-        // Logout Logic: Redirects to Login and clears the activity stack
-        logoutButton.setOnClickListener {
-            auth.signOut()
-            val logoutIntent = Intent(this, LoginActivity::class.java)
-            logoutIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(logoutIntent)
+        // 5. Navigation Listeners
+        backButton.setOnClickListener {
             finish()
         }
 
-        // Navigate to Change Password
         changePasswordButton.setOnClickListener {
-            val passwordIntent = Intent(this, ChangePasswordActivity::class.java)
-            startActivity(passwordIntent)
+            startActivity(Intent(this, ChangePasswordActivity::class.java))
+        }
+
+        // 6. Logout Logic (The Fix)
+        logoutButton.setOnClickListener {
+            // Sign out from Firebase first
+            auth.signOut()
+
+            // Define the destination
+            val intent = Intent(this, LoginActivity::class.java)
+
+            // Flags: CLEAR_TOP ensures we don't just add a new LoginActivity on top,
+            // but return to the existing one (if it exists) or create it as the new root.
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+            startActivity(intent)
+
+            // finish() is enough here because CLEAR_TASK handles the stack.
+            // If the app still closes, try removing finishAffinity() and using finish().
+            finish()
         }
     }
 
     private fun hideSystemUI() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.insetsController?.let { controller ->
-                // Hide only status bars for a cleaner look while keeping nav accessible
                 controller.hide(WindowInsets.Type.statusBars())
                 controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             }
