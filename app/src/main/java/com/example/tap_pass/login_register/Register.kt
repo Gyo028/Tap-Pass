@@ -1,6 +1,7 @@
 package com.example.tap_pass.login_register
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.text.SpannableString
@@ -43,14 +44,12 @@ class Register : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Prepare for full screen (replaces enableEdgeToEdge)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         }
 
         setContentView(R.layout.activity_register)
 
-        // 2. Hide bars after view is attached to prevent crashes
         window.decorView.post {
             hideSystemUI()
         }
@@ -68,8 +67,8 @@ class Register : AppCompatActivity() {
         progressBar.visibility = View.GONE
 
         createButton.setOnClickListener {
-            val email = emailEditText.text.toString()
-            val password = passwordEditText.text.toString()
+            val email = emailEditText.text.toString().trim()
+            val password = passwordEditText.text.toString().trim()
 
             if (validateForm()) {
                 createButton.visibility = View.GONE
@@ -78,25 +77,58 @@ class Register : AppCompatActivity() {
 
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnCompleteListener { task ->
-                        createButton.isEnabled = true
-                        progressBar.visibility = View.GONE
-
                         if (task.isSuccessful) {
-                            val intent = Intent(this, SetupProfileActivity::class.java)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                            Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
-                            finish()
+                            sendVerificationEmail()
                         } else {
-                            Log.e("RegisterError", task.exception.toString())
-                            Toast.makeText(this, "Error creating account", Toast.LENGTH_SHORT).show()
+                            createButton.isEnabled = true
+                            progressBar.visibility = View.GONE
                             createButton.visibility = View.VISIBLE
+                            Log.e("RegisterError", task.exception.toString())
+                            Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                         }
                     }
             }
         }
 
         setupSpannableLinks()
+    }
+
+    private fun sendVerificationEmail() {
+        val user = auth.currentUser
+        user?.sendEmailVerification()?.addOnCompleteListener { task ->
+            // Reset UI state
+            createButton.isEnabled = true
+            progressBar.visibility = View.GONE
+            createButton.visibility = View.VISIBLE
+
+            if (task.isSuccessful) {
+                // 1. Create the dialog builder
+                val builder = AlertDialog.Builder(this, R.style.TermsDialogTheme)
+                    .setTitle("Verify Your Email")
+                    .setMessage("A verification link has been sent to ${user.email}. Please verify your account before logging in.")
+                    .setCancelable(false)
+                    .setPositiveButton("Go to Login") { _, _ ->
+                        auth.signOut()
+                        val intent = Intent(this, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
+                    }
+
+                // 2. Create the dialog instance
+                val alertDialog = builder.create()
+
+                // 3. Show the dialog
+                alertDialog.show()
+
+                // 4. Force the button text to white after it is shown
+                alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
+
+            } else {
+                Log.e("RegisterError", "Email verification failed: ${task.exception?.message}")
+                Toast.makeText(this, "Account created, but failed to send verification email.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun hideSystemUI() {
@@ -169,30 +201,32 @@ class Register : AppCompatActivity() {
         }
     }
 
-    // ... showTermsDialog(), showDataPolicyDialog(), validateForm(), and isValidPassword() remain the same as your previous code ...
-
     private fun showTermsDialog() {
         val termsAndConditions = """
         Terms and Conditions
         1. Acceptance of Terms...
-        """ // (Shortened for brevity)
-        AlertDialog.Builder(this, R.style.TermsDialogTheme)
+        """
+        val dialog = AlertDialog.Builder(this, R.style.TermsDialogTheme)
             .setTitle("Terms and Conditions")
             .setMessage(termsAndConditions)
             .setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
-            .create().show()
+            .create()
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
     }
 
     private fun showDataPolicyDialog() {
         val dataPolicy = """
         Data Policy Act
         Collection of Data...
-        """ // (Shortened for brevity)
-        AlertDialog.Builder(this, R.style.TermsDialogTheme)
+        """
+        val dialog = AlertDialog.Builder(this, R.style.TermsDialogTheme)
             .setTitle("Data Policy Act")
             .setMessage(dataPolicy)
             .setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
-            .create().show()
+            .create()
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
     }
 
     private fun validateForm(): Boolean {

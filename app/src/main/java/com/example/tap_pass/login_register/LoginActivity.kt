@@ -18,6 +18,7 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.tap_pass.admin.AdminActivity
 import com.example.tap_pass.home_main.MainActivity
@@ -37,14 +38,12 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Prepare for full screen
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false)
         }
 
         setContentView(R.layout.activity_login)
 
-        // 2. Hide bars AFTER the view is attached to prevent crashes
         window.decorView.post {
             hideSystemUI()
         }
@@ -93,11 +92,46 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    checkUserRole(auth.currentUser?.uid ?: "")
+                    val user = auth.currentUser
+
+                    // Verify if email is confirmed
+                    if (user != null && user.isEmailVerified) {
+                        checkUserRole(user.uid)
+                    } else {
+                        // User exists but hasn't clicked the link
+                        progressBar.visibility = View.GONE
+                        loginButton.visibility = View.VISIBLE
+                        showVerificationWarningDialog()
+                        auth.signOut()
+                    }
                 } else {
                     resetUIWithError("Login failed: ${task.exception?.message}")
                 }
             }
+    }
+
+    private fun showVerificationWarningDialog() {
+        // Use your theme here to keep the background consistent
+        val builder = AlertDialog.Builder(this, R.style.TermsDialogTheme)
+            .setTitle("Email Not Verified")
+            .setMessage("You haven't verified your email yet. Please check your inbox for the link sent during registration.")
+            .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+            .setNeutralButton("Resend Email") { _, _ ->
+                auth.currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        Toast.makeText(this, "Verification email resent!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Error resending email: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+        val alertDialog = builder.create()
+        alertDialog.show()
+
+        // Set button colors to white after the dialog is shown
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE)
+        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(Color.WHITE)
     }
 
     private fun checkUserRole(uid: String) {
