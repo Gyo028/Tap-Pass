@@ -1,8 +1,12 @@
 package com.example.tap_pass.login_register
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.view.WindowInsets
+import android.view.WindowInsetsController
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -25,7 +29,18 @@ class SetupProfileActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // 1. Prepare window for full screen
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+        }
+
         setContentView(R.layout.activity_setup_profile)
+
+        // 2. Safely hide status and navigation bars
+        window.decorView.post {
+            hideSystemUI()
+        }
 
         auth = FirebaseAuth.getInstance()
         fstore = FirebaseFirestore.getInstance()
@@ -48,6 +63,21 @@ class SetupProfileActivity : AppCompatActivity() {
         }
     }
 
+    private fun hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            )
+        }
+    }
+
     private fun checkRfidMapping(userId: String, typedCode: String) {
         progressBar.visibility = View.VISIBLE
 
@@ -62,7 +92,6 @@ class SetupProfileActivity : AppCompatActivity() {
                     val currentOwner = mappingDoc.getString("owner_userid")
 
                     if (currentOwner.isNullOrEmpty()) {
-                        // Pass both the HEX (for hardware) and the UID (for profile)
                         saveFinalProfile(userId, hexId, readableId)
                     } else {
                         progressBar.visibility = View.GONE
@@ -86,8 +115,8 @@ class SetupProfileActivity : AppCompatActivity() {
 
         val profileData = hashMapOf(
             "fullName" to fullName,
-            "rfidHex" to hexId,      // The hardware-level UID (e.g., A1 B2 C3 D4)
-            "rfidUid" to readableId, // The user-friendly ID (e.g., 12345678)
+            "rfidHex" to hexId,
+            "rfidUid" to readableId,
             "phoneNumber" to phone,
             "email" to auth.currentUser?.email,
             "balance" to 0.0,

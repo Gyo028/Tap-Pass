@@ -13,6 +13,7 @@
         android:theme="@style/Theme.Midterms">
         <activity
             android:name=".login_register.LoginActivity"
+            android:theme="@style/Theme.Midterms"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,9 +23,11 @@
         </activity>
         <activity
             android:name=".home_main.MainActivity"
+            android:theme="@style/Theme.Midterms"
             android:exported="false" />
         <activity
             android:name=".login_register.Register"
+            android:theme="@style/Theme.Midterms"
             android:exported="false" />
         <activity
             android:name=".profile.ProfileActivity"
@@ -34,6 +37,7 @@
             android:exported="false" />
         <activity
             android:name=".login_register.SetupProfileActivity"
+            android:theme="@style/Theme.Midterms"
             android:exported="false" />
         <activity
             android:name=".inbox.LoadActivity"
@@ -55,6 +59,7 @@
             android:exported="false" />
         <activity
             android:name=".admin.AdminActivity"
+            android:theme="@style/Theme.Midterms"
             android:exported="false" />
     </application>
 
